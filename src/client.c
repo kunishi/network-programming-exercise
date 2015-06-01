@@ -11,11 +11,23 @@
 #define SERVER_ADDR "127.0.0.1"
 #define SERVER_PORT 12345
 
+void send_message(int s)
+{
+  char buf[1024];
+  while (fgets(buf, sizeof(buf), stdin) != NULL) {
+    if (write(s, buf, strlen(buf)) == -1) {
+      perror("send error");
+      return;
+    }
+  }
+}
+
 int main(void)
 {
   int s, cc;
   struct sockaddr_in sa;
   char buf[1024];
+  char *message = "A message content\n";
 
   if ((s = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
     perror("socket");
@@ -27,14 +39,32 @@ int main(void)
   sa.sin_port = htons(SERVER_PORT);
   sa.sin_addr.s_addr = inet_addr(SERVER_ADDR);
 
+#if defined(INFO)
   fprintf(stderr, "Connecting to the server...\n");
+#endif
   if (connect(s, (struct sockaddr *)&sa, sizeof(sa)) == -1) {
     perror("connect");
     exit(1);
   }
+#if defined(INFO)
   fprintf(stderr, "Connected.\n");
+#endif
 
+#if defined(INFO)
+  fprintf(stderr, "Send a message to the server:\n\n");
+#endif
+  send_message(s);
+  if (shutdown(s, SHUT_WR) == -1) {
+    perror("shutdown write");
+    exit(1);
+  }
+#if defined(INFO)
+  fprintf(stderr, "\n\nFinished sending.\n");
+#endif
+
+#if defined(INFO)
   fprintf(stderr, "Message from the server:\n\n");
+#endif
   while ((cc = read(s, buf, sizeof(buf))) > 0) {
     write(1, buf, cc); /* 1: stdout */
   }
@@ -42,12 +72,9 @@ int main(void)
     perror("read");
     exit(1);
   }
+#if defined(INFO)
   fprintf(stderr, "\n\nFinished receiving.\n");
-
-  if (shutdown(s, SHUT_RDWR) == -1) {
-    perror("shutdown");
-    exit(1);
-  }
+#endif
 
   if (close(s) == -1) {
     perror("close");
