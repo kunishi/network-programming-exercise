@@ -17,3 +17,5 @@ Gemfile.lock
 bin/*
 .bundle/*
 
+src/client
+src/server_echo
